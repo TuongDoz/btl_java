@@ -11,3 +11,18 @@
 # File tạm của hệ điều hành
 .DS_Store
 Thumbs.db
+
+# Log file
+*.log
+
+# Package Files
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# virtual machine crash logs
+hs_err_pid*
+replay_pid*
