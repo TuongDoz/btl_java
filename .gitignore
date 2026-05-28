@@ -1,0 +1,13 @@
+# Thư mục biên dịch của Eclipse
+/bin/
+*.class
+
+# File cấu hình cá nhân của Eclipse
+.settings/
+.classpath
+.project
+.metadata/
+
+# File tạm của hệ điều hành
+.DS_Store
+Thumbs.db
