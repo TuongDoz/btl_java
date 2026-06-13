@@ -1,6 +1,7 @@
-package thanhvienform;
+package views;
 
 import java.awt.Color;
+
 import java.awt.Component;
 import java.awt.EventQueue;
 import java.awt.Font;
@@ -30,6 +31,7 @@ import javax.swing.table.DefaultTableModel;
 import java.sql.Connection;
 import org.eclipse.wb.swing.FocusTraversalOnArray;
 import java.util.*;
+import utils.DatabaseConnection;
 
 public class ThanhVienForm extends JFrame {
 
@@ -39,6 +41,7 @@ public class ThanhVienForm extends JFrame {
 	private JTextField txtMaTV;
 	private JTextField txtTenTV;
 	private JTextField txtSDT;
+	private controllers.ThanhVienController controller = new controllers.ThanhVienController();
 	 
 	 
 
@@ -50,7 +53,7 @@ public class ThanhVienForm extends JFrame {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					ThanhVienForm frame = new ThanhVienForm();
+					ThanhVienForm frame = new ThanhVienForm();	
 					frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -59,35 +62,14 @@ public class ThanhVienForm extends JFrame {
 		});
 	}
 	private void loadData() {
-	    DefaultTableModel model =
-	            (DefaultTableModel) tblThanhVien.getModel();
-
-	    model.setRowCount(0);
-
-	    try {
-	        Connection con = DAO.getConnection();
-
-	        String sql = "SELECT * FROM ThanhVien";
-
-	        PreparedStatement pst = con.prepareStatement(sql);
-
-	        ResultSet rs = pst.executeQuery();
-
-	        while (rs.next()) {
-
-	            model.addRow(new Object[]{
-	                rs.getString("MaTV"),
-	                rs.getString("TenTV"),
-	                rs.getString("SoDienThoai"),
-	                rs.getString("NhomMau")
-	            });
-	        }
-
-	        con.close();
-
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	    }
+		    DefaultTableModel model = (DefaultTableModel) tblThanhVien.getModel();
+		    model.setRowCount(0);
+		    // Gọi Controller lấy danh sách, không cần viết SQL ở đây nữa
+		    List<models.ThanhVien> list = controller.getAllThanhVien();
+		    for (models.ThanhVien tv : list) {
+		        model.addRow(new Object[]{ tv.getMaTV(), tv.getTenTV(), tv.getSoDienThoai(), tv.getNhomMau() });
+		    }
+		
 	}
 	/**
 	 * Create the frame.
@@ -128,7 +110,7 @@ public class ThanhVienForm extends JFrame {
 		panel.add(lblNewLabel);
 		
 		JLabel lblNewLabel_2 = new JLabel("New label");
-		lblNewLabel_2.setIcon(new ImageIcon("D:\\BTLjava\\Screenshot 2026-05-29 004816.png"));
+		lblNewLabel_2.setIcon(new ImageIcon(ThanhVienForm.class.getResource("/images/Screenshot 2026-05-29 004816.png")));
 		lblNewLabel_2.setBounds(691, 11, 300, 120);
 		panel.add(lblNewLabel_2);
 		
@@ -143,22 +125,22 @@ public class ThanhVienForm extends JFrame {
 		panel_1.setLayout(null);
 		
 		JLabel lblNewLabel_3 = new JLabel("New label");
-		lblNewLabel_3.setIcon(new ImageIcon("D:\\BTLjava\\Screenshot 2026-05-29 004831.png"));
+		lblNewLabel_3.setIcon(new ImageIcon(ThanhVienForm.class.getResource("/images/Screenshot 2026-05-29 004831.png")));
 		lblNewLabel_3.setBounds(31, 39, 40, 31);
 		panel_1.add(lblNewLabel_3);
 		
 		JLabel lblNewLabel_4 = new JLabel("New label");
-		lblNewLabel_4.setIcon(new ImageIcon("D:\\BTLjava\\Screenshot 2026-05-29 004834.png"));
+		lblNewLabel_4.setIcon(new ImageIcon(ThanhVienForm.class.getResource("/images/Screenshot 2026-05-29 004834.png")));
 		lblNewLabel_4.setBounds(37, 81, 40, 28);
 		panel_1.add(lblNewLabel_4);
 		
 		JLabel lblNewLabel_5 = new JLabel("New label");
-		lblNewLabel_5.setIcon(new ImageIcon("D:\\BTLjava\\Screenshot 2026-05-29 004839.png"));
+		lblNewLabel_5.setIcon(new ImageIcon(ThanhVienForm.class.getResource("/images/Screenshot 2026-05-29 004839.png")));
 		lblNewLabel_5.setBounds(38, 120, 30, 32);
 		panel_1.add(lblNewLabel_5);
 		
 		JLabel lblNewLabel_6 = new JLabel("New label");
-		lblNewLabel_6.setIcon(new ImageIcon("D:\\BTLjava\\Screenshot 2026-05-29 004843.png"));
+		lblNewLabel_6.setIcon(new ImageIcon(ThanhVienForm.class.getResource("/images/Screenshot 2026-05-29 004843.png")));
 		lblNewLabel_6.setBounds(41, 163, 30, 31);
 		panel_1.add(lblNewLabel_6);
 		
@@ -199,9 +181,18 @@ public class ThanhVienForm extends JFrame {
 		panel_1.add(cboNhomMau);
 		
 		JLabel lblNewLabel_11 = new JLabel("");
-		lblNewLabel_11.setIcon(new ImageIcon("D:\\BTLjava\\Screenshot 2026-05-29 004823.png"));
+		lblNewLabel_11.setIcon(new ImageIcon(ThanhVienForm.class.getResource("/images/Screenshot 2026-05-29 004823.png")));
 		lblNewLabel_11.setBounds(636, 21, 425, 225);
 		panel_1.add(lblNewLabel_11);
+		JButton btnQuayLai = new JButton("Quay lại");
+		btnQuayLai.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				new TrangChu().setVisible(true); 
+		        dispose();
+			}
+		});
+		btnQuayLai.setBounds(630, 240, 128, 31); 
+		panel_1.add(btnQuayLai);
 		
 		JButton btnNewButton = new JButton("Thêm");
 		btnNewButton.addActionListener(new ActionListener() {
@@ -230,54 +221,15 @@ public class ThanhVienForm extends JFrame {
 			            return;
 			        }
 
-				 try {
-
-				        Connection con = DAO.getConnection();
-				        String check =
-				                "SELECT * FROM ThanhVien WHERE MaTV=?";
-
-				        PreparedStatement pstCheck =
-				                con.prepareStatement(check);
-
-				        pstCheck.setString(1, txtMaTV.getText());
-
-				        ResultSet rs =
-				                pstCheck.executeQuery();
-
-				        if(rs.next()) {
-
-				            JOptionPane.showMessageDialog(
-				                    null,
-				                    "Mã TV đã tồn tại!");
-
-				            return;
-				        }
-
-				        String sql =
-				                "INSERT INTO ThanhVien(MaTV,TenTV,SoDienThoai,NhomMau) VALUES(?,?,?,?)";
-
-				        PreparedStatement pst = con.prepareStatement(sql);
-
-				        pst.setString(1, txtMaTV.getText());
-				        pst.setString(2, txtTenTV.getText());
-				        pst.setString(3, txtSDT.getText());
-				        pst.setString(4, cboNhomMau.getSelectedItem().toString());
-
-				        pst.executeUpdate();
-
-				        JOptionPane.showMessageDialog(null,
-				                "Thêm thành công!");
-
-				        loadData();
-
-				        con.close();
-
-				    } catch (Exception e1) {
-
-				        JOptionPane.showMessageDialog(null,
-				                "Thêm thất bại!");
-				    }
-			}
+			        models.ThanhVien tv = new models.ThanhVien(txtMaTV.getText(), txtTenTV.getText().trim(), txtSDT.getText().trim(), cboNhomMau.getSelectedItem().toString());
+			        
+			        if (controller.themThanhVien(tv)) {
+			            JOptionPane.showMessageDialog(null, "Thêm thành công!");
+			            loadData();
+			        } else {
+			            JOptionPane.showMessageDialog(null, "Thêm thất bại!");
+			        }
+		    }
 		});
 		
 		btnNewButton.setBounds(43, 240, 116, 31);
@@ -286,46 +238,14 @@ public class ThanhVienForm extends JFrame {
 		JButton btnNewButton_1 = new JButton("Sửa");
 		btnNewButton_1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				  try {
-
-			            Connection con =
-			                    DAO.getConnection();
-
-			            String sql =
-			                    "UPDATE ThanhVien "
-			                  + "SET TenTV=?, SoDienThoai=?, NhomMau=? "
-			                  + "WHERE MaTV=?";
-
-			            PreparedStatement pst =
-			                    con.prepareStatement(sql);
-
-			            pst.setString(1,
-			                    txtTenTV.getText());
-
-			            pst.setString(2,
-			                    txtSDT.getText());
-
-			            pst.setString(3,
-			                    cboNhomMau.getSelectedItem().toString());
-
-			            pst.setString(4,
-			                    txtMaTV.getText());
-
-			            pst.executeUpdate();
-
-			            JOptionPane.showMessageDialog(
-			                    null,
-			                    "Sửa thành công");
-
-			            loadData();
-
-			            con.close();
-
-			        } catch(Exception ex) {
-
-			            ex.printStackTrace();
-			        }
-			}
+		        models.ThanhVien tv = new models.ThanhVien(txtMaTV.getText().trim(), txtTenTV.getText().trim(), txtSDT.getText().trim(), cboNhomMau.getSelectedItem().toString());
+		        if (controller.suaThanhVien(tv)) {
+		            JOptionPane.showMessageDialog(null, "Sửa thành công!");
+		            loadData();
+		        } else {
+		            JOptionPane.showMessageDialog(null, "Sửa thất bại!");
+		        }
+		    }
 		});
 		btnNewButton_1.setBounds(181, 240, 124, 31);
 		panel_1.add(btnNewButton_1);
@@ -333,36 +253,14 @@ public class ThanhVienForm extends JFrame {
 		JButton btnNewButton_2 = new JButton("Xóa");
 		btnNewButton_2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				 try {
-
-			            Connection con =
-			                    DAO.getConnection();
-
-			            String sql =
-			                    "DELETE FROM ThanhVien WHERE MaTV=?";
-
-			            PreparedStatement pst =
-			                    con.prepareStatement(sql);
-
-			            pst.setString(1,
-			                    txtMaTV.getText());
-
-			            pst.executeUpdate();
-
-			            JOptionPane.showMessageDialog(
-			                    null,
-			                    "Xóa thành công");
-
-			            loadData();
-
-			            con.close();
-
-			        } catch(Exception ex) {
-
-			            ex.printStackTrace();
-			        }
-			    
-			}
+		        String ma = txtMaTV.getText().trim();
+		        if (controller.xoaThanhVien(ma)) {
+		            JOptionPane.showMessageDialog(null, "Xóa thành công!");
+		            loadData();
+		        } else {
+		            JOptionPane.showMessageDialog(null, "Xóa thất bại!");
+		        }
+		    }
 		});
 		btnNewButton_2.setBounds(332, 240, 128, 31);
 		panel_1.add(btnNewButton_2);
@@ -381,7 +279,7 @@ public class ThanhVienForm extends JFrame {
 		panel_1.add(btnNewButton_3);
 		
 		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.setBounds(0, 433, 1008, 329);
+		scrollPane.setBounds(58, 433, 1008, 329);
 		contentPane.add(scrollPane);
 		
 		tblThanhVien = new JTable();
@@ -389,15 +287,37 @@ public class ThanhVienForm extends JFrame {
 		scrollPane.setViewportView(tblThanhVien);
 		
 		tblThanhVien.setModel(new DefaultTableModel(
-			new Object[][] {
-			},
+			new Object[][] {},
 			new String[] {
-				"M\u00E3 TV", "T\u00EAn TV", "S\u0110T", "Nh\u00F3m m\u00E1u"
+					"Mã TV", "Tên TV", "SĐT", "Nhóm máu"
 			}
-		));
+		){
+		    private static final long serialVersionUID = 1L;
+
+	
+		    @Override
+		    public boolean isCellEditable(int row, int column) {
+		        return false; 
+		    }
+		});
+
+		tblThanhVien.addMouseListener(new java.awt.event.MouseAdapter() {
+		    public void mouseClicked(java.awt.event.MouseEvent evt) {
+
+		        int row = tblThanhVien.getSelectedRow();
+		        if (row >= 0) {
+		            txtMaTV.setText(tblThanhVien.getValueAt(row, 0).toString());
+		            txtTenTV.setText(tblThanhVien.getValueAt(row, 1).toString());
+		            txtSDT.setText(tblThanhVien.getValueAt(row, 2).toString());
+		            cboNhomMau.setSelectedItem(tblThanhVien.getValueAt(row, 3).toString());
+		            
+		            txtMaTV.setEditable(false); 
+		        }
+		    }
+		});
 		
 		setFocusTraversalPolicy(new FocusTraversalOnArray(new Component[]{contentPane, panel, lblNewLabel, lblNewLabel_1, lblNewLabel_2, panel_1, tblThanhVien, scrollPane, lblNewLabel_3, lblNewLabel_4, lblNewLabel_5, lblNewLabel_6, lblNewLabel_7, lblNewLabel_8, lblNewLabel_9, lblNewLabel_10, txtMaTV, txtTenTV, txtSDT, cboNhomMau, lblNewLabel_11, btnNewButton, btnNewButton_1, btnNewButton_2, btnNewButton_3}));
-
+		loadData();
 	}
 
 }

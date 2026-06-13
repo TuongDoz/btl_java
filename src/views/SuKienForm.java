@@ -1,8 +1,12 @@
-package view;
+package views;
 
-import utils.DatabaseConection;
+import utils.DatabaseConnection;
+import models.SuKien;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+
+import controllers.SuKienController;
+
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -14,6 +18,7 @@ public class SuKienForm extends JFrame {
     private JButton btnThem, btnSua, btnXoa, btnLamMoi;
     private JTable table;
     private DefaultTableModel model;
+    private SuKienController controller = new SuKienController();
 
     private final Color colorBg = new Color(245, 246, 250);     
     private final Color colorThem = new Color(168, 230, 207);   
@@ -30,8 +35,10 @@ public class SuKienForm extends JFrame {
         setLayout(new BorderLayout(15, 15)); 
 
         initUI();
+        
         addEvents();
-        loadData("");
+        if (!java.beans.Beans.isDesignTime()) {
+            loadData("");}
     }
 
     private void initUI() {
@@ -49,7 +56,7 @@ public class SuKienForm extends JFrame {
 
         panelTimKiem.add(lblTimKiem);
         panelTimKiem.add(txtTimKiem);
-
+        
         JPanel northWrapper = new JPanel(new BorderLayout());
         northWrapper.setBackground(colorBg);
         northWrapper.setBorder(BorderFactory.createEmptyBorder(15, 15, 0, 15));
@@ -90,6 +97,7 @@ public class SuKienForm extends JFrame {
         westWrapper.setBorder(BorderFactory.createEmptyBorder(0, 15, 15, 0));
         westWrapper.add(panelForm, BorderLayout.NORTH);
         add(westWrapper, BorderLayout.WEST);
+        
 
         model = new DefaultTableModel(new String[]{"Mã SK", "Tên Sự Kiện", "Ngày Tổ Chức"}, 0) {
             @Override
@@ -122,6 +130,26 @@ public class SuKienForm extends JFrame {
         panelNut.add(btnSua);
         panelNut.add(btnXoa);
         panelNut.add(btnLamMoi);
+        
+
+        JButton btnQuayLai = new JButton("Quay lại");
+        btnQuayLai.setFont(fontLabel);
+        btnQuayLai.setPreferredSize(new Dimension(110, 38));
+        btnQuayLai.setBackground(colorLamMoi); 
+        btnQuayLai.setForeground(Color.BLACK);
+        btnQuayLai.setFocusPainted(false);
+        btnQuayLai.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+ 
+        panelNut.add(btnQuayLai); 
+
+
+        btnQuayLai.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                new TrangChu().setVisible(true); 
+                dispose(); 
+            }
+        });
 
         JPanel panelCenter = new JPanel(new BorderLayout(0, 10));
         panelCenter.setBackground(colorBg);
@@ -171,38 +199,17 @@ public class SuKienForm extends JFrame {
     }
     
     private void loadData(String keyword) {
-        model.setRowCount(0);
-        String sql;
-        
-        if (keyword.isEmpty()) {
-            sql = "SELECT MaSK, TenSK, NgayToChuc FROM SuKien ORDER BY NgayToChuc DESC";
-        } else {
-            sql = "SELECT MaSK, TenSK, NgayToChuc FROM SuKien WHERE MaSK LIKE ? OR TenSK LIKE ? ORDER BY NgayToChuc DESC";
-        }
-
-        try (Connection conn = DatabaseConection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            if (!keyword.isEmpty()) {
-                String param = "%" + keyword + "%";
-                pstmt.setString(1, param);
-                pstmt.setString(2, param);
-            }
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    model.addRow(new Object[]{
-                        rs.getString("MaSK"), rs.getString("TenSK"), rs.getString("NgayToChuc")
-                    });
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+    	model.setRowCount(0);
+        java.util.List<SuKien> list = controller.getDanhSachSuKien(keyword);
+        for (SuKien sk : list) {
+            model.addRow(new Object[]{
+                sk.getMaSK(), sk.getTenSK(), sk.getNgayToChuc()
+            });
         }
     }
 
     private void themSuKien(ActionEvent e) {
-        String ma = txtMaSK.getText().trim();
+    	String ma = txtMaSK.getText().trim();
         String ten = txtTenSK.getText().trim();
         String ngay = txtNgayToChuc.getText().trim();
 
@@ -211,25 +218,23 @@ public class SuKienForm extends JFrame {
             return;
         }
 
-        String sql = "INSERT INTO SuKien VALUES (?, ?, ?)";
-        try (Connection conn = DatabaseConection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, ma);
-            pstmt.setString(2, ten);
-            if (ngay.isEmpty()) pstmt.setNull(3, Types.DATE);
-            else pstmt.setString(3, ngay);
+        if (controller.checkTonTai(ma)) {
+            JOptionPane.showMessageDialog(this, "Mã sự kiện đã tồn tại!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
-            pstmt.executeUpdate();
+        SuKien sk = new SuKien(ma, ten, ngay);
+        if (controller.themSuKien(sk)) {
             JOptionPane.showMessageDialog(this, "Thêm sự kiện thành công!");
             loadData("");
             clearForm();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Lỗi thêm: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this, "Thêm thất bại. Vui lòng kiểm tra lại định dạng ngày (yyyy-mm-dd)!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void suaSuKien(ActionEvent e) {
-        String ma = txtMaSK.getText().trim();
+    	String ma = txtMaSK.getText().trim();
         String ten = txtTenSK.getText().trim();
         String ngay = txtNgayToChuc.getText().trim();
 
@@ -238,42 +243,31 @@ public class SuKienForm extends JFrame {
             return;
         }
 
-        String sql = "UPDATE SuKien SET TenSK = ?, NgayToChuc = ? WHERE MaSK = ?";
-        try (Connection conn = DatabaseConection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, ten);
-            if (ngay.isEmpty()) pstmt.setNull(2, Types.DATE);
-            else pstmt.setString(2, ngay);
-            pstmt.setString(3, ma);
-
-            pstmt.executeUpdate();
+        SuKien sk = new SuKien(ma, ten, ngay);
+        if (controller.suaSuKien(sk)) {
             JOptionPane.showMessageDialog(this, "Cập nhật thành công!");
             loadData("");
             clearForm();
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Lỗi sửa: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this, "Sửa thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void xoaSuKien(ActionEvent e) {
-        String ma = txtMaSK.getText().trim();
+    	String ma = txtMaSK.getText().trim();
         if (ma.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Vui lòng chọn sự kiện cần xóa!");
             return;
         }
 
-        int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn xóa không?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+        int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn xóa sự kiện này không?", "Xác nhận", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
-            String sql = "DELETE FROM SuKien WHERE MaSK = ?";
-            try (Connection conn = DatabaseConection.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setString(1, ma);
-                pstmt.executeUpdate();
+            if (controller.xoaSuKien(ma)) {
                 JOptionPane.showMessageDialog(this, "Xóa thành công!");
                 loadData("");
                 clearForm();
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Lỗi xóa: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "Không thể xóa vì sự kiện này đã có dữ liệu Điểm danh!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
